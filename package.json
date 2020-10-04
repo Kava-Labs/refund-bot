@@ -1,0 +1,26 @@
+{
+  "name": "@kava-labs/refund-bot",
+  "description": "Automated service for processing BEP3 refunds on Kava and Binance Chain",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "author": "Kava Labs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kava-Labs/refund-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Kava-Labs/refund-bot/issues"
+  },
+  "homepage": "https://github.com/Kava-Labs/refund-bot#readme",
+  "dependencies": {
+    "@binance-chain/javascript-sdk": "^3.0.2",
+    "@kava-labs/javascript-sdk": "^2.0.0-beta.6",
+    "dotenv": "^8.2.0",
+    "log-timestamp": "^0.3.0",
+    "node-cron": "^2.0.3"
+  },
+  "devDependencies": {
+    "prettier": "2.0.5"
+  }
+}
