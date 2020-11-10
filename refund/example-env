@@ -2,12 +2,12 @@
 CRONTAB="5 * * * *"
 
 # Kava network details
-KAVA_LCD_URL="https://kava3.data.kava.io"
+KAVA_LCD_URL="https://kava4.data.kava.io"
 
 KAVA_MNEMONIC="secret words that unlock your kava address"
 
 # Binance Chain network details
-BINANCE_CHAIN_DEPUTY_ADDRESS = "bnb1jh7uv2rm6339yue8k4mj9406k3509kr4wt5nxn"
+BINANCE_CHAIN_DEPUTY_ADDRESSES = bnb1jh7uv2rm6339yue8k4mj9406k3509kr4wt5nxn,bnb10zq89008gmedc6rrwzdfukjk94swynd7dl97w8,bnb1xz3xqf4p2ygrw9lhp5g5df4ep4nd20vsywnmpr,bnb15jzuvvg2kf0fka3fl2c8rx0kc3g6wkmvsqhgnh
 
 BINANCE_CHAIN_LCD_URL="https://dex.binance.org"
 

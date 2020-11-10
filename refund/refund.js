@@ -9,11 +9,11 @@ const bnbCrypto = BnbChain.crypto;
  * Automatically refunds any refundable swaps on both Kava and Binance Chain
  */
 class RefundBot {
-    constructor(bnbChainDeputy, limit = 1000, offsetIncoming = 0, offsetOutgoing = 0) {
-        if (!bnbChainDeputy) {
-            throw new Error("must specify the deputy's Binance Chain address");
+    constructor(deputyAddresses, limit = 1000, offsetIncoming = 0, offsetOutgoing = 0) {
+        if (deputyAddresses.length == 0) {
+            throw new Error("must specify at least one Binance Chain deputy address");
         }
-        this.bnbChainDeputy = bnbChainDeputy
+        this.deputyAddresses = deputyAddresses;
         this.limit = limit;
         this.offsetIncoming = offsetIncoming;
         this.offsetOutgoing = offsetOutgoing;
@@ -84,7 +84,7 @@ class RefundBot {
      */
     async refundSwaps() {
         await this.refundKavaSwaps()
-        await this.refundBinanceChainSwaps()        
+        await this.refundBinanceChainSwaps()
     }
 
      /**
@@ -140,11 +140,11 @@ class RefundBot {
                 expiredSwaps = expiredSwaps.concat(swapBatch);
                 page++;
             // If no swaps in batch, don't check the next batch
-            } else {  
+            } else {
                 checkNextBatch = false
             }
         }
-    
+
         // Calculate each swap's ID as it's not stored in the struct (it's on the interface)
         let swapIDs = []
         for(const expiredSwap of expiredSwaps) {
@@ -196,38 +196,42 @@ class RefundBot {
 
         while(checkNextBatch) {
             let swapBatch
-            try {
-                let res
-                if(incoming) {
-                    res = await this.bnbClient.getSwapByCreator(this.bnbChainDeputy, this.limit, offsetIncoming);
-                } else {
-                    res = await this.bnbClient.getSwapByRecipient(this.bnbChainDeputy, this.limit, offsetOutgoing);
-                }
-                swapBatch = _.get(res, 'result.atomicSwaps');
-                
-            } catch (e) {
-                console.log(`couldn't query ${incoming ? "incoming" : "outgoing"} swaps on Binance Chain...`)
-                return
-            }
-            
-            // If swaps in batch, filter for expired swaps
-            if(swapBatch.length > 0) {
-                const refundableSwapsInBatch = swapBatch.filter(swap => swap.status == 1) // Status 1 is open
-                openSwaps = openSwaps.concat(refundableSwapsInBatch)
-
-                // If it's a full batch, increment offset by limit for next iteration
-                if(swapBatch.length <= this.limit) {
+            for(var deputyAddress of this.deputyAddresses) {
+                try {
+                    let res
                     if(incoming) {
-                        offsetIncoming = offsetIncoming + this.limit
+                        res = await this.bnbClient.getSwapByCreator(deputyAddress, this.limit, offsetIncoming);
                     } else {
-                        offsetOutgoing = offsetOutgoing + this.limit
+                        res = await this.bnbClient.getSwapByRecipient(deputyAddress, this.limit, offsetOutgoing);
                     }
+                    swapBatch = _.get(res, 'result.atomicSwaps');
+
+                } catch (e) {
+                    console.log(`couldn't query ${incoming ? "incoming" : "outgoing"} swaps on Binance Chain...`)
+                    return
                 }
-            // If no swaps in batch, don't check the next batch
-            } else {  
-                checkNextBatch = false
+
+                // If swaps in batch, filter for expired swaps
+                if(swapBatch.length > 0) {
+
+                    const refundableSwapsInBatch = swapBatch.filter(swap =>  swap.status == 1 )
+                    openSwaps = openSwaps.concat(refundableSwapsInBatch)
+
+                    // If it's a full batch, increment offset by limit for next iteration
+                    if(swapBatch.length <= this.limit) {
+                        if(incoming) {
+                            offsetIncoming = offsetIncoming + this.limit
+                        } else {
+                            offsetOutgoing = offsetOutgoing + this.limit
+                        }
+                    }
+                // If no swaps in batch, don't check the next batch
+                } else {
+                    checkNextBatch = false
+                }
             }
         }
+
         return openSwaps.map(swap => swap.swapId)
     }
 
