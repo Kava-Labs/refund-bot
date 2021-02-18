@@ -115,18 +115,21 @@ class RefundBot {
     }
 
     // Refund each swap
-    for (var i = 0; i < swapIDs.length; i++) {
+    let i = 0
+    await asyncForEach(swapIDs, async (swapID) =>  {
       const sequence = String(Number(accountData.sequence) + i);
       try {
-        console.log(`\tRefunding swap ${swapIDs[i]}`);
-        const txHash = await this.kavaClient.refundSwap(swapIDs[i], sequence);
+        console.log(`\tRefunding swap ${swapID}`);
+        const fee = { amount: [{"denom": "ukava", "amount": "15000"}], gas: String(300000) };
+        const txHash = await this.kavaClient.refundSwap(swapID, fee, sequence);
         console.log('\tTx hash:', txHash);
       } catch (e) {
-        console.log(`\tCould not refund swap ${swapIDs[i]}`);
+        console.log(`\tCould not refund swap ${swapID}`);
         console.log(e);
       }
-      await sleep(7000); // Wait for the block to be confirmed
-    }
+      await sleep(15000); // Wait for the block to be confirmed
+      i++
+    })
   }
 
   /**
@@ -141,7 +144,7 @@ class RefundBot {
       let swapBatch;
       const args = { status: 'Expired', page: page, limit: this.limit };
       try {
-        swapBatch = await this.kavaClient.getSwaps(5000, args);
+        swapBatch = await this.kavaClient.getSwaps(args, 5000);
       } catch (e) {
         console.log(`couldn't query swaps on Kava...`);
         return;
@@ -180,7 +183,7 @@ class RefundBot {
     console.log(`Binance Chain refundable swap count: ${swapIDs.length}`);
 
     // Refund each swap
-    for (const swapID of swapIDs) {
+    await asyncForEach(swapIDs, async (swapID) => {
       console.log(`\tRefunding swap ${swapID}`);
       try {
         const res = await this.bnbClient.swap.refundHTLT(
@@ -193,8 +196,8 @@ class RefundBot {
       } catch (e) {
         console.log(`\t${e}`);
       }
-      await sleep(3000); // Wait for the block to be confirmed
-    }
+      await sleep(5000); // Wait for the block to be confirmed
+    })
   }
 
   /**
@@ -207,7 +210,11 @@ class RefundBot {
     let offsetIncoming = this.offsetIncoming;
     let offsetOutgoing = this.offsetOutgoing;
 
-    for (var deputyAddress of this.deputyAddresses) {
+    const bnbInfo = await this.bnbClient._httpClient.request("get", "/api/v1/node-info")
+    const latestBnbBlockHeight = Number.parseInt(bnbInfo.result.sync_info.latest_block_height)
+    console.log(`Binance chain block height ${latestBnbBlockHeight}`)
+
+    await asyncForEach(this.deputyAddresses, async (deputyAddress) => {
       let checkNextBatch = true;
       while (checkNextBatch) {
         let swapBatch;
@@ -239,7 +246,9 @@ class RefundBot {
         // If swaps in batch, filter for expired swaps
         if (swapBatch.length > 0) {
           const refundableSwapsInBatch = swapBatch.filter(
-            (swap) => swap.status == 1
+            (swap) => {
+              return swap.status == 1 && Number.parseInt(swap.expireHeight) <= latestBnbBlockHeight
+            }
           );
           openSwaps = openSwaps.concat(refundableSwapsInBatch);
 
@@ -251,12 +260,14 @@ class RefundBot {
               offsetOutgoing = offsetOutgoing + this.limit;
             }
           }
-          // If no swaps in batch, don't check the next batch
+          // If no swaps in batch, don't check the next batch, reset offsets
         } else {
           checkNextBatch = false;
+          offsetIncoming = this.offsetIncoming;
+          offsetOutgoing = this.offsetOutgoing;
         }
       }
-    }
+    })
 
     return openSwaps.map((swap) => swap.swapId);
   }
@@ -275,5 +286,18 @@ class RefundBot {
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * performs an event-loop blocking callback function on each item in the input array
+ * @param {object} array the array to perform the callback on
+ * @param {*} callback the callback function to perform
+ * @returns {Promise<boolean>}
+ */
+var asyncForEach = async (array, callback) => {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array);
+  }
+};
+
 
 module.exports.RefundBot = RefundBot;
