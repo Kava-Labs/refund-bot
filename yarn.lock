@@ -63,10 +63,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^3.0.0"
 
-"@kava-labs/javascript-sdk@^2.0.0-beta.6":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@kava-labs/javascript-sdk/-/javascript-sdk-2.0.0.tgz#ceb50bcda8dfd219d047b46163f3f6885d56b25f"
-  integrity sha512-zNtqubvPnqBZSsDoqT1PYKPSjZKhNxjzTlZnFN6R2kDne/37cKEOxmm/ZQXgEkbX2SEvzQBhElbgx1UukFjpqA==
+"@kava-labs/javascript-sdk@^4.0.1-beta.1":
+  version "4.0.1-beta.1"
+  resolved "https://registry.yarnpkg.com/@kava-labs/javascript-sdk/-/javascript-sdk-4.0.1-beta.1.tgz#063303e4a07c3f484b896997d7a8ee43dca8e002"
+  integrity sha512-GDsza3G0UjRf3PfHnMDQjJEHlqqh62hSWTOPUBXpzfjL7I3bwvUZHOeHUGG1JYm3OrHp6swoSOkwmQsyFnY7CA==
   dependencies:
     "@kava-labs/sig" "^0.1.0"
     axios "^0.19.2"
