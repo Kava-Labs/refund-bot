@@ -22,7 +22,7 @@ var main = async () => {
 
   // Start cron job
   cron.schedule(cronTimer, () => {
-  refundBot.refundSwaps();
+    refundBot.refundSwaps();
   });
 
   // Print Binance Chain offsets hourly for debugging and future optimization.
