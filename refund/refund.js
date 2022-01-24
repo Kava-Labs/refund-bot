@@ -120,14 +120,14 @@ class RefundBot {
       const sequence = String(Number(accountData.sequence) + i);
       try {
         console.log(`\tRefunding swap ${swapID}`);
-        const fee = { amount: [{"denom": "ukava", "amount": "15000"}], gas: String(300000) };
+        const fee = { amount: [{"denom": "ukava", "amount": "50000"}], gas: String(300000) };
         const txHash = await this.kavaClient.refundSwap(swapID, fee, sequence);
         console.log('\tTx hash:', txHash);
       } catch (e) {
         console.log(`\tCould not refund swap ${swapID}`);
         console.log(e);
       }
-      await sleep(15000); // Wait for the block to be confirmed
+      await sleep(25000); // Wait for the block to be confirmed
       i++
     })
   }
@@ -212,7 +212,7 @@ class RefundBot {
 
     const bnbInfo = await this.bnbClient._httpClient.request("get", "/api/v1/node-info")
     const latestBnbBlockHeight = Number.parseInt(bnbInfo.result.sync_info.latest_block_height)
-    console.log(`Binance chain block height ${latestBnbBlockHeight}`)
+    // console.log(`Binance chain block height ${latestBnbBlockHeight}`)
 
     await asyncForEach(this.deputyAddresses, async (deputyAddress) => {
       let checkNextBatch = true;
