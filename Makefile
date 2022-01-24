@@ -15,9 +15,11 @@ docker-login:
 .PHONY: docker-build
 docker-build:
 	$(DOCKER) build -t $(IMAGE_NAME):$(COMMIT_ID_SHORT) .
+
 .PHONY: docker-tag
 docker-tag:
 	$(DOCKER) tag $(IMAGE_NAME):$(COMMIT_ID_SHORT) $(DOCKER_REPOSITORY_URL):$(COMMIT_ID_SHORT)
+
 .PHONY: docker-push
 docker-push:
 	$(DOCKER) push $(DOCKER_REPOSITORY_URL):$(COMMIT_ID_SHORT)
