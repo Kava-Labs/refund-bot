@@ -27,20 +27,25 @@ class RefundBot {
   /**
    * Initialize the Kava client
    * @param {String} lcdURL api endpoint for Kava's rest-server
+   * @param {String} rpcURL api endpoint for Kava's rpc server
    * @param {String} mnemonic Kava address mnemonic
    * @return {Promise}
    */
-  async initKavaClient(lcdURL, mnemonic) {
+  async initKavaClient(lcdURL, kavaRpcURL, mnemonic) {
     if (!lcdURL) {
       throw new Error("Kava's chain's rest-server url is required");
+    }
+    if (!kavaRpcURL) {
+      throw new Error("Kava's chain's rpc-server url is required");
     }
     if (!mnemonic) {
       throw new Error('Kava address mnemonic is required');
     }
 
     // Initiate and set Kava client
-    this.kavaClient = new Kava.KavaClient(lcdURL);
+    this.kavaClient = new Kava.KavaClient(lcdURL, kavaRpcURL);
     this.kavaClient.setWallet(mnemonic);
+    await this.kavaClient.setNewWallet(mnemonic);
     try {
       await this.kavaClient.initChain();
     } catch (e) {
@@ -57,7 +62,7 @@ class RefundBot {
    * @param {String} network "testnet" or "mainnet"
    * @return {Promise}
    */
-  async initBnbChainClient(lcdURL, mnemonic, network = 'testnet') {
+  async initBnbChainClient(lcdURL, mnemonic, network = "testnet") {
     if (!lcdURL) {
       throw new Error("Binance Chain's rest-server url is required");
     }
@@ -138,11 +143,15 @@ class RefundBot {
   async getRefundableKavaSwaps() {
     let expiredSwaps = [];
     let checkNextBatch = true;
-    let page = 1; // After refunding swaps paginated query results will always start from page 1
+    let offset = 0; // After refunding swaps paginated query results will always start from page 1
 
     while (checkNextBatch) {
       let swapBatch;
-      const args = { status: 'Expired', page: page, limit: this.limit };
+      const args = {
+        status: 3,
+        "pagination.offset": offset,
+        "pagination.limit": this.limit,
+      };
       try {
         swapBatch = await this.kavaClient.getSwaps(args, 5000);
       } catch (e) {
@@ -152,7 +161,7 @@ class RefundBot {
       // If swaps in batch, save them and increment page count
       if (swapBatch.length > 0) {
         expiredSwaps = expiredSwaps.concat(swapBatch);
-        page++;
+        offset += this.limit;
         // If no swaps in batch, don't check the next batch
       } else {
         checkNextBatch = false;
