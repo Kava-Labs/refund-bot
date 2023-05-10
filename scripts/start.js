@@ -6,6 +6,7 @@ var main = async () => {
   // Load environment variables
   const cronTimer = process.env.CRONTAB;
   const kavaLcdURL = process.env.KAVA_LCD_URL;
+  const kavaRpcURL = process.env.KAVA_RPC_URL;
   const kavaMnemonic = process.env.KAVA_MNEMONIC;
   const bnbChainLcdURL = process.env.BINANCE_CHAIN_LCD_URL;
   const bnbChainMnemonic = process.env.BINANCE_CHAIN_MNEMONIC;
@@ -13,7 +14,7 @@ var main = async () => {
 
   // Initiate refund bot
   var refundBot = new RefundBot(deputyAddresses);
-  await refundBot.initKavaClient(kavaLcdURL, kavaMnemonic);
+  await refundBot.initKavaClient(kavaLcdURL, kavaRpcURL, kavaMnemonic);
   await refundBot.initBnbChainClient(
     bnbChainLcdURL,
     bnbChainMnemonic,
