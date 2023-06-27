@@ -156,10 +156,10 @@ class RefundBot {
         swapBatch = await this.kavaClient.getSwaps(args, 5000);
       } catch (e) {
         console.log(`couldn't query swaps on Kava...`);
-        return;
+        return [];
       }
       // If swaps in batch, save them and increment page count
-      if (swapBatch.length > 0) {
+      if (swapBatch && swapBatch.length > 0) {
         expiredSwaps = expiredSwaps.concat(swapBatch);
         offset += this.limit;
         // If no swaps in batch, don't check the next batch
@@ -253,7 +253,7 @@ class RefundBot {
         }
 
         // If swaps in batch, filter for expired swaps
-        if (swapBatch.length > 0) {
+        if (swapBatch && swapBatch.length > 0) {
           const refundableSwapsInBatch = swapBatch.filter(
             (swap) => {
               return swap.status == 1 && Number.parseInt(swap.expireHeight) <= latestBnbBlockHeight
