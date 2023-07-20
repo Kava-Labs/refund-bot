@@ -1,9 +1,11 @@
 # Refund Bot
+
 Automated service for processing BEP3 refunds on Kava and Binance Chain.
 
 ## Set up
 
 Clone the example env file
+
 ```bash
 cp ./refund/example-env ./refund/.env
 ```
@@ -25,16 +27,20 @@ var main = async () => {
   // Initiate refund bot
   refundBot = new RefundBot(bnbChainDeputy);
   await refundBot.initKavaClient(kavaLcdURL, kavaMnemonic);
-  await refundBot.initBnbChainClient(bnbChainLcdURL, bnbChainMnemonic, "mainnet");
+  await refundBot.initBnbChainClient(
+    bnbChainLcdURL,
+    bnbChainMnemonic,
+    "mainnet"
+  );
 
   // Start cron job
   cron.schedule(cronTimer, () => {
-    refundBot.refundSwaps()
+    refundBot.refundSwaps();
   });
 
   // Optional: print Binance Chain offsets hourly for debugging
   cron.schedule("* 1 * * *", () => {
-    refundBot.printOffsets()
+    refundBot.printOffsets();
   });
-}
+};
 ```

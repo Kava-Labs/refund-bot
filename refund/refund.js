@@ -1,8 +1,8 @@
-require('dotenv').config();
-require('log-timestamp');
-const _ = require('lodash');
-const Kava = require('@kava-labs/javascript-sdk');
-const BnbChain = require('@binance-chain/javascript-sdk');
+require("dotenv").config();
+require("log-timestamp");
+const _ = require("lodash");
+const Kava = require("@kava-labs/javascript-sdk");
+const BnbChain = require("@binance-chain/javascript-sdk");
 const bnbCrypto = BnbChain.crypto;
 
 /**
@@ -16,7 +16,7 @@ class RefundBot {
     offsetOutgoing = 0
   ) {
     if (deputyAddresses.length == 0) {
-      throw new Error('must specify at least one Binance Chain deputy address');
+      throw new Error("must specify at least one Binance Chain deputy address");
     }
     this.deputyAddresses = deputyAddresses;
     this.limit = limit;
@@ -39,7 +39,7 @@ class RefundBot {
       throw new Error("Kava's chain's rpc-server url is required");
     }
     if (!mnemonic) {
-      throw new Error('Kava address mnemonic is required');
+      throw new Error("Kava address mnemonic is required");
     }
 
     // Initiate and set Kava client
@@ -67,7 +67,7 @@ class RefundBot {
       throw new Error("Binance Chain's rest-server url is required");
     }
     if (!mnemonic) {
-      throw new Error('Binance Chain address mnemonic is required');
+      throw new Error("Binance Chain address mnemonic is required");
     }
 
     // Start Binance Chain client
@@ -83,7 +83,7 @@ class RefundBot {
     }
 
     // Load our Binance Chain address (required for refunds)
-    const bnbAddrPrefix = network == 'mainnet' ? 'bnb' : 'tbnb';
+    const bnbAddrPrefix = network == "mainnet" ? "bnb" : "tbnb";
     this.bnbChainAddress = bnbCrypto.getAddressFromPrivateKey(
       privateKey,
       bnbAddrPrefix
@@ -96,7 +96,7 @@ class RefundBot {
    * Manages swap refunds
    */
   async refundSwaps() {
-    await this.refundKavaSwaps()
+    await this.refundKavaSwaps();
     await this.refundBinanceChainSwaps();
   }
 
@@ -120,21 +120,24 @@ class RefundBot {
     }
 
     // Refund each swap
-    let i = 0
-    await asyncForEach(swapIDs, async (swapID) =>  {
+    let i = 0;
+    await asyncForEach(swapIDs, async (swapID) => {
       const sequence = String(Number(accountData.sequence) + i);
       try {
         console.log(`\tRefunding swap ${swapID}`);
-        const fee = { amount: [{"denom": "ukava", "amount": "50000"}], gas: String(300000) };
+        const fee = {
+          amount: [{ denom: "ukava", amount: "50000" }],
+          gas: String(300000),
+        };
         const txHash = await this.kavaClient.refundSwap(swapID, fee, sequence);
-        console.log('\tTx hash:', txHash);
+        console.log("\tTx hash:", txHash);
       } catch (e) {
         console.log(`\tCould not refund swap ${swapID}`);
         console.log(e);
       }
       await sleep(25000); // Wait for the block to be confirmed
-      i++
-    })
+      i++;
+    });
   }
 
   /**
@@ -206,7 +209,7 @@ class RefundBot {
         console.log(`\t${e}`);
       }
       await sleep(5000); // Wait for the block to be confirmed
-    })
+    });
   }
 
   /**
@@ -219,8 +222,14 @@ class RefundBot {
     let offsetIncoming = this.offsetIncoming;
     let offsetOutgoing = this.offsetOutgoing;
 
-    const bnbInfo = await this.bnbClient._httpClient.request("get", "/api/v1/node-info")
-    const latestBnbBlockHeight = Number.parseInt(bnbInfo.result.sync_info.latest_block_height)
+    const bnbInfo = await retry(
+      () => this.bnbClient._httpClient.request("get", "/api/v1/node-info"),
+      250,
+      4000
+    );
+    const latestBnbBlockHeight = Number.parseInt(
+      bnbInfo.result.sync_info.latest_block_height
+    );
     // console.log(`Binance chain block height ${latestBnbBlockHeight}`)
 
     await asyncForEach(this.deputyAddresses, async (deputyAddress) => {
@@ -242,11 +251,11 @@ class RefundBot {
               offsetOutgoing
             );
           }
-          swapBatch = _.get(res, 'result.atomicSwaps');
+          swapBatch = _.get(res, "result.atomicSwaps");
         } catch (e) {
           console.log(
             `couldn't query ${
-              incoming ? 'incoming' : 'outgoing'
+              incoming ? "incoming" : "outgoing"
             } swaps on Binance Chain...`
           );
           return;
@@ -254,11 +263,12 @@ class RefundBot {
 
         // If swaps in batch, filter for expired swaps
         if (swapBatch && swapBatch.length > 0) {
-          const refundableSwapsInBatch = swapBatch.filter(
-            (swap) => {
-              return swap.status == 1 && Number.parseInt(swap.expireHeight) <= latestBnbBlockHeight
-            }
-          );
+          const refundableSwapsInBatch = swapBatch.filter((swap) => {
+            return (
+              swap.status == 1 &&
+              Number.parseInt(swap.expireHeight) <= latestBnbBlockHeight
+            );
+          });
           openSwaps = openSwaps.concat(refundableSwapsInBatch);
 
           // If it's a full batch, increment offset by limit for next iteration
@@ -276,7 +286,7 @@ class RefundBot {
           offsetOutgoing = this.offsetOutgoing;
         }
       }
-    })
+    });
 
     return openSwaps.map((swap) => swap.swapId);
   }
@@ -285,7 +295,7 @@ class RefundBot {
    * Print the current Binance Chain offsets to console
    */
   printOffsets() {
-    console.log('\nCurrent Binance Chain offsets:');
+    console.log("\nCurrent Binance Chain offsets:");
     console.log(`Offset incoming: ${this.offsetIncoming}`);
     console.log(`Offset outgoing: ${this.offsetOutgoing}\n`);
   }
@@ -308,5 +318,29 @@ var asyncForEach = async (array, callback) => {
   }
 };
 
+/**
+ * A simple method for retrying a request that could fail.
+ * Uses exponential backoff based on `retryDelayMs`. Each attempt will multiply the last sleep by 2.
+ * Once the backoff passes `maxWaitMs` the request will fail.
+ * @param {()=>Promise<T>} fn the function to retry
+ * @param {number} retryDelayMs number of milliseconds to wait before retrying (multiplied by 2 each attempt)
+ * @param {number} maxWaitMs max number ms before failing the request and stopping retrying
+ * @returns {Promise<T>}
+ */
+async function retry(fn, retryDelayMs, maxWaitMs) {
+  try {
+    const result = await fn();
+    return result;
+  } catch (err) {
+    const newBackoff = retryDelayMs * 2;
+    console.log(`fn failed: ${err}`);
+    if (newBackoff > maxWaitMs) {
+      throw err;
+    }
+    console.log(`Will sleep ${newBackoff}ms and retry.`);
+    await sleep(retryDelayMs);
+    return retry(fn, newBackoff, maxWaitMs);
+  }
+}
 
 module.exports.RefundBot = RefundBot;
