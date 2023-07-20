@@ -222,9 +222,10 @@ class RefundBot {
     let offsetIncoming = this.offsetIncoming;
     let offsetOutgoing = this.offsetOutgoing;
 
-    const bnbInfo = await this.bnbClient._httpClient.request(
-      "get",
-      "/api/v1/node-info"
+    const bnbInfo = await retry(
+      () => this.bnbClient._httpClient.request("get", "/api/v1/node-info"),
+      250,
+      4000
     );
     const latestBnbBlockHeight = Number.parseInt(
       bnbInfo.result.sync_info.latest_block_height
@@ -316,5 +317,30 @@ var asyncForEach = async (array, callback) => {
     await callback(array[index], index, array);
   }
 };
+
+/**
+ * A simple method for retrying a request that could fail.
+ * Uses exponential backoff based on `retryDelayMs`. Each attempt will multiply the last sleep by 2.
+ * Once the backoff passes `maxWaitMs` the request will fail.
+ * @param {()=>Promise<T>} fn the function to retry
+ * @param {number} retryDelayMs number of milliseconds to wait before retrying (multiplied by 2 each attempt)
+ * @param {number} maxWaitMs max number ms before failing the request and stopping retrying
+ * @returns {Promise<T>}
+ */
+async function retry(fn, retryDelayMs, maxWaitMs) {
+  try {
+    const result = await fn();
+    return result;
+  } catch (err) {
+    const newBackoff = retryDelayMs * 2;
+    console.log(`fn failed: ${err}`);
+    if (newBackoff > maxWaitMs) {
+      throw err;
+    }
+    console.log(`Will sleep ${newBackoff}ms and retry.`);
+    await sleep(retryDelayMs);
+    return retry(fn, newBackoff, maxWaitMs);
+  }
+}
 
 module.exports.RefundBot = RefundBot;
