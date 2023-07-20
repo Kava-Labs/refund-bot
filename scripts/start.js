@@ -1,6 +1,6 @@
-require('dotenv').config({ path: process.env.ENV_FILE});
-const RefundBot = require('..').RefundBot;
-const cron = require('node-cron');
+require("dotenv").config({ path: process.env.ENV_FILE });
+const RefundBot = require("..").RefundBot;
+const cron = require("node-cron");
 
 var main = async () => {
   // Load environment variables
@@ -10,7 +10,7 @@ var main = async () => {
   const kavaMnemonic = process.env.KAVA_MNEMONIC;
   const bnbChainLcdURL = process.env.BINANCE_CHAIN_LCD_URL;
   const bnbChainMnemonic = process.env.BINANCE_CHAIN_MNEMONIC;
-  const deputyAddresses = process.env.BINANCE_CHAIN_DEPUTY_ADDRESSES.split(',');
+  const deputyAddresses = process.env.BINANCE_CHAIN_DEPUTY_ADDRESSES.split(",");
 
   // Initiate refund bot
   var refundBot = new RefundBot(deputyAddresses);
@@ -18,7 +18,7 @@ var main = async () => {
   await refundBot.initBnbChainClient(
     bnbChainLcdURL,
     bnbChainMnemonic,
-    'mainnet'
+    "mainnet"
   );
 
   // Start cron job
@@ -28,7 +28,7 @@ var main = async () => {
 
   // Print Binance Chain offsets hourly for debugging and future optimization.
   cron.schedule("* 1 * * *", () => {
-    refundBot.printOffsets()
+    refundBot.printOffsets();
   });
 };
 main();
